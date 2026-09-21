@@ -54,10 +54,12 @@ PYF
 case "$RUNTIME_URL" in off|0|"") RUNTIME_URL="" ;; esac
 if [ -n "$RUNTIME_URL" ] && [ -z "${VESSL_RUNTIME_ACTIVE:-}" ]; then
     rm -rf "$RUNTIME_BASE.new"; mkdir -p "$RUNTIME_BASE.new"; _rt_ok=yes
+    # raw.githubusercontent.com 은 CDN 이 수 분 캐시한다 — 배포 2분 뒤 재가동이 옛 판을 받았다(2026-09-21 실측). 시각 쿼리로 매번 원본을 받는다.
+    _rt_q="?t=$(date +%s)"
     for _f in bootstrap.sh gpu_idle_watchdog.py gpu_metrics_exporter.py; do
-        _rt_fetch "$RUNTIME_URL/$_f" "$RUNTIME_BASE.new/$_f" 2>/dev/null || { _rt_ok=no; log "런타임 받기 실패: $_f"; break; }
+        _rt_fetch "$RUNTIME_URL/$_f$_rt_q" "$RUNTIME_BASE.new/$_f" 2>/dev/null || { _rt_ok=no; log "런타임 받기 실패: $_f"; break; }
     done
-    _rt_fetch "$RUNTIME_URL/VERSION" "$RUNTIME_BASE.new/VERSION" 2>/dev/null || echo "?" > "$RUNTIME_BASE.new/VERSION"
+    _rt_fetch "$RUNTIME_URL/VERSION$_rt_q" "$RUNTIME_BASE.new/VERSION" 2>/dev/null || echo "?" > "$RUNTIME_BASE.new/VERSION"
     if [ "$_rt_ok" = yes ]; then
         bash -n "$RUNTIME_BASE.new/bootstrap.sh" 2>/dev/null || { _rt_ok=no; log "런타임 검증 실패: bootstrap.sh 문법"; }
     fi
