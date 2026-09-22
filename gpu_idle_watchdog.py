@@ -376,10 +376,14 @@ def main() -> None:
         elif warned and elapsed >= idle_sec + grace_sec:
             total = elapsed / 60
             if pause_workspace(args.workspace, args.dry_run):
-                notify(f":large_blue_circle: {tag()}*자동 pause 완료* — `{args.workspace}`\n"
-                       f"GPU 유휴 {total:.0f}분 지속으로 워크스페이스를 정지했습니다.\n"
-                       f"_`/root` 의 데이터는 유지됩니다. 재개: "
-                       f"`vesslctl workspace start {args.workspace}`_")
+                # 완료 줄은 기본 OFF(2026-09-22 팀 요청: 채널엔 생성·terminate·유휴 예고만). VESSL_NOTIFY_PAUSE_DONE=1 로 되돌림.
+                done = (f":large_blue_circle: {tag()}*자동 pause 완료* — `{args.workspace}`\n"
+                        f"GPU 유휴 {total:.0f}분 지속으로 워크스페이스를 정지했습니다.\n"
+                        f"_`/root` 의 데이터는 유지됩니다. 재개: `./workspace_ctl.sh start {args.workspace}`_")
+                if os.environ.get("VESSL_NOTIFY_PAUSE_DONE", "0") == "1":
+                    notify(done)
+                else:
+                    log(done.replace("\n", " | "))
                 log("pause 완료 — 감시 종료")
                 return
             # 실패 시 다시 시도하지 않도록 카운터만 초기화
